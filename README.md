@@ -7,7 +7,7 @@ submap's key mappings:
 
 # TODO
 
-- [ ] Proper pre-commit/format stuff
+- [X] Proper pre-commit/format stuff
 - [ ] Nix package
 - [ ] Add a sane way to show aliases
 - [ ] Try to cover with tests as much as possible
