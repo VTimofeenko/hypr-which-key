@@ -44,6 +44,23 @@
           ...
         }:
         {
+          packages =
+            let
+              craneLib = inputs.crane.mkLib pkgs;
+              commonArgs = {
+                src = craneLib.cleanCargoSource ./.;
+                strictDeps = true;
+                buildInputs = [
+                  pkgs.bemenu # TODO: make this configurable in a module or something
+                ];
+              };
+            in
+            rec {
+              default = hypr-which-key;
+              hypr-which-key = craneLib.buildPackage (commonArgs // {
+                cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+              });
+            };
           # Dev deps
           devshells = import ./.dev/devshells.nix { inherit pkgs config; };
           treefmt = import ./.dev/treefmt.nix { };

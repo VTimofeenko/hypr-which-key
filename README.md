@@ -8,7 +8,7 @@ submap's key mappings:
 # TODO
 
 - [X] Proper pre-commit/format stuff
-- [ ] Nix package
+- [X] Nix package
 - [ ] Add a sane way to show aliases
 - [ ] Try to cover with tests as much as possible
 - [ ] Nix modules (checks?)
