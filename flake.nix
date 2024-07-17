@@ -69,7 +69,7 @@
             pre-commit = import ./.dev/pre-commit.nix { };
             devShells.pre-commit = config.pre-commit.devShell;
           };
-        flake.homeManagerOptions =
+        flake.homeManagerModules.default =
           let
             inherit (flake-parts-lib) importApply;
           in
