@@ -11,7 +11,7 @@ submap's key mappings:
 - [X] Nix package
 - [X] Add a sane way to show aliases
 - [ ] Try to cover with tests as much as possible
-- [ ] Nix modules (checks?)
+- [X] Nix modules (checks?)
 - [ ] A proper UI instead of horrible echo-into-bemenu hack
 - [ ] Gif of project
 - [ ] Add "show all shortcuts" mode
