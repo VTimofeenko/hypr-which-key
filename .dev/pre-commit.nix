@@ -12,6 +12,10 @@ _: {
           format = "stderr";
         };
       };
+      clippy = {
+        enable = true;
+        settings.offline = false;
+      };
     };
   };
 }
