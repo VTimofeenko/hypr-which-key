@@ -1,0 +1,28 @@
+---
+name: "Nix-related checks"
+"on":
+  push:
+    branches:
+      - main
+
+jobs:
+  nix-flake-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: "Run nix flake check"
+        run: nix flake check
+
+  build-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: "Build the package"
+        run: nix build .#default
+
