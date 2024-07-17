@@ -1,7 +1,10 @@
-use hyprland::data::*;
+mod get_bindings;
+mod utils;
+use crate::get_bindings::{run_and_parse_command, ParsedBinding};
+use crate::utils::mod_mask_to_string;
+
 use hyprland::event_listener::EventListener;
-use hyprland::prelude::*;
-use std::collections::HashMap;
+// use hyprland::prelude::*;
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
@@ -18,33 +21,25 @@ impl From<ShownBinding> for String {
     }
 }
 
-// Taken from https://github.com/hyprland-community/Hyprkeys
-fn mod_mask_to_string(mod_mask: u16) -> Vec<String> {
-    // TODO: Make this const
-    let mod_masks = HashMap::from([
-        (1, "SHIFT"),
-        (2, "CAPS"),
-        (4, "CTRL"),
-        (8, "ALT"),
-        (16, "MOD2"),
-        (32, "MOD3"),
-        (64, "SUPER"),
-        (128, "MOD5"),
-    ]);
-    let mut cur_val = 7;
-    let mut result: Vec<String> = Vec::new();
-    let mut mod_mask = mod_mask;
-
-    while mod_mask > 0 {
-        let mod_val = 1 << cur_val;
-        if mod_mask >= mod_val {
-            mod_mask -= mod_val;
-            result.push(mod_masks[&(1 << cur_val)].to_string());
+impl From<ParsedBinding> for ShownBinding {
+    fn from(value: ParsedBinding) -> Self {
+        Self {
+            key_combo: {
+                let mut result = mod_mask_to_string(value.modmask);
+                result.push(value.key);
+                result.join("+")
+            },
+            description: {
+                if value.description.is_empty() {
+                    [value.dispatcher.clone(), value.arg.clone()].join(" ")
+                } else {
+                    value.description.clone()
+                }
+            },
         }
-        cur_val -= 1;
     }
-    result
 }
+
 #[derive(Debug)]
 enum Message {
     Start(String),
@@ -63,27 +58,20 @@ fn main() {
             match data.is_empty() {
                 true => tx.send(Message::Stop).unwrap(),
                 false => {
-                    let binds = Binds::get().unwrap();
+                    // let binds = Binds::get().unwrap();
+                    // using hyprctl to get binds since at the time of writing hyprland rust binds
+                    // don't have binds description
+                    //
+                    // Time to cheat using hyprctl binds that has it
+                    let binds = run_and_parse_command().unwrap();
 
-                    let mode_binds = binds
+                    let message = binds
                         .into_iter()
                         .filter(|b| b.submap == data)
-                        .collect::<Vec<Bind>>();
-
-                    let message: Vec<String> = mode_binds
-                        .iter()
-                        .map(|bind| {
-                            // Logic that creates an individual mapping message
-                            let mut key_combo = mod_mask_to_string(bind.modmask);
-                            key_combo.push(bind.key.clone());
-
-                            let binding = ShownBinding {
-                                key_combo: key_combo.join("+"),
-                                description: [bind.dispatcher.clone(), bind.arg.clone()].join(" "),
-                            };
-                            binding.into()
-                        })
-                        .collect();
+                        // This looks ugly, but From
+                        // trait is not transitive?
+                        .map(|b| Into::<ShownBinding>::into(b).into())
+                        .collect::<Vec<String>>();
 
                     tx.send(Message::Start(message.join("\n"))).unwrap()
                 }
@@ -136,7 +124,7 @@ fn main() {
                 };
             }
             Err(e) => {
-                println!("Error: {}", e);
+                eprintln!("Error: {}", e);
                 break;
             }
         }

@@ -9,7 +9,7 @@ submap's key mappings:
 
 - [X] Proper pre-commit/format stuff
 - [X] Nix package
-- [ ] Add a sane way to show aliases
+- [X] Add a sane way to show aliases
 - [ ] Try to cover with tests as much as possible
 - [ ] Nix modules (checks?)
 - [ ] A proper UI instead of horrible echo-into-bemenu hack
