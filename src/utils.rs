@@ -25,5 +25,28 @@ pub fn mod_mask_to_string(mod_mask: u16) -> Vec<String> {
         }
         cur_val -= 1;
     }
+    // TODO: result ordering is half-accidental here. This would be better done through an
+    // explicit partial order
+    result.reverse();
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_combos() {
+        //TODO: This might ba macro?
+        let test_cases = vec![
+            (1, vec!["SHIFT"]),
+            (9, vec!["SHIFT", "ALT"]),
+            (69, vec!["SHIFT", "CTRL", "SUPER"]),
+        ];
+
+        for (experiment, expected_result) in test_cases {
+            let result = mod_mask_to_string(experiment);
+            assert_eq!(result, expected_result, "Failed test case: {}", experiment);
+        }
+    }
 }
