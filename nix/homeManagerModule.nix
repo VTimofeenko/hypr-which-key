@@ -11,7 +11,7 @@ let
 in
 {
   # Interface
-  options.services.hyprland-language-switch-notifier = {
+  options.services.hypr-which-key = {
     enable = mkEnableOption "hyprland language switch notifications";
     package = mkPackageOption self.packages.${pkgs.system} "hypr-which-key" { };
   };
