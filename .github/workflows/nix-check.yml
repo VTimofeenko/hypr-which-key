@@ -3,7 +3,7 @@ name: "Nix-related checks"
 "on":
   push:
     branches:
-      - main
+      - master
 
 jobs:
   nix-flake-check:
