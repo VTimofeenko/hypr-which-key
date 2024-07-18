@@ -4,6 +4,10 @@ name: "Nix-related checks"
   push:
     branches:
       - master
+    paths-ignore:
+      - README.md
+      - .envrc
+      - .gitignore
 
 jobs:
   nix-flake-check:
