@@ -8,6 +8,18 @@ is reset.
 
 *NOTE*: this project is very much in alpha stage. See TODOs below.
 
+# Usage
+
+```
+nix run github:VTimofeenko/hypr-which-key
+```
+
+or import `homeManagerModules.default` from this flake and enable the service:
+
+```nix
+services.hypr-which-key.enable = true;
+```
+
 # TODO
 
 - [X] Proper pre-commit/format stuff
