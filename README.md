@@ -3,6 +3,9 @@ submap's key mappings:
 
 ![](./.assets/screenshot.png)
 
+The menu will pop up whenever you enter a submap and close whenever the submap
+is reset.
+
 *NOTE*: this project is very much in alpha stage. See TODOs below.
 
 # TODO
