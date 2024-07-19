@@ -1,4 +1,5 @@
-_: {
+{ pkgs, ... }:
+{
   settings = {
     hooks = {
       treefmt = {
@@ -15,6 +16,7 @@ _: {
       clippy = {
         enable = true;
         settings.offline = false;
+        extraPackages = [ pkgs.gcc ];
       };
     };
   };
