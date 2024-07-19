@@ -18,7 +18,8 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: "Run nix flake check"
-        run: nix flake check
+        # Looks like clippy really wants the network access
+        run: nix flake check --option sandbox false
 
   build-package:
     runs-on: ubuntu-latest
