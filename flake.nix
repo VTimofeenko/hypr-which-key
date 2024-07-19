@@ -66,7 +66,7 @@
             # Dev deps
             devshells = import ./.dev/devshells.nix { inherit pkgs config; };
             treefmt = import ./.dev/treefmt.nix { };
-            pre-commit = import ./.dev/pre-commit.nix { inherit pkgs; };
+            pre-commit = import ./.dev/pre-commit.nix { };
             devShells.pre-commit = config.pre-commit.devShell;
           };
         flake.homeManagerModules.default =
