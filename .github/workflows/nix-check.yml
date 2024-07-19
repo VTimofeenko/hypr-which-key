@@ -18,7 +18,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Pull in development environment
-        run: nix develop
+        run: nix flake develop
       - name: "Run nix flake check"
         # Looks like clippy really wants the network access
         run: nix flake check --option sandbox false
