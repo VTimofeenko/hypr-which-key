@@ -1,6 +1,8 @@
 #![allow(warnings)]
 use futures::sink::SinkExt;
 use futures::stream::{Stream, StreamExt};
+use hyprland::data::Binds;
+use hyprland::shared::HyprData;
 use iced::futures;
 use iced::stream;
 use iced::widget::{
@@ -9,7 +11,7 @@ use iced::widget::{
 use iced::window;
 use iced::{Center, Element, Fill, Subscription, Task, Theme, Vector};
 
-use std::collections::BTreeMap;
+mod utils;
 
 fn main() -> iced::Result {
     iced::daemon("Example", Example::update, Example::view)
@@ -49,7 +51,6 @@ impl Example {
     fn update(&mut self, message: WindowMessage) -> Task<WindowMessage> {
         match message {
             WindowMessage::WindowOpened(submap) => {
-                println!("Creating window with {submap:#?}");
                 let window = Window::new(submap);
 
                 let (id, open) = window::open(window::Settings::default());
@@ -69,7 +70,6 @@ impl Example {
     }
 
     fn view(&self, window_id: window::Id) -> Element<WindowMessage> {
-        println!("Daemon view {self:#?}");
         let window = &self.window;
         window.as_ref().unwrap().view(self.windowId.unwrap()).into()
     }
@@ -89,14 +89,39 @@ impl Window {
     }
 
     fn view(&self, id: window::Id) -> Element<WindowMessage> {
+        fn format_bind(bind: &hyprland::data::Bind) -> String {
+            let modmask_str: String = if bind.modmask == 0 {
+                "".to_string()
+            } else {
+                // Append a "+" sign at the end
+                utils::mod_mask_to_string(bind.modmask).join("+") + "+"
+            };
+            let description = match bind.description.is_empty() {
+                true => format!("{} {}", bind.dispatcher, bind.arg),
+                false => bind.description.clone(),
+            };
+
+            vec![modmask_str, bind.key.clone(), ": ".to_string(), description]
+                .join("")
+                .to_string()
+        }
+        let binds: Vec<String> = Binds::get()
+            .unwrap()
+            .iter()
+            .filter(|b| b.submap == self.submap)
+            .map(format_bind)
+            .collect();
+
+        let binds_text = binds.join("\n");
+
         let content = scrollable(
-            column![text(self.submap.clone())]
+            column![text(binds_text)]
                 .spacing(50)
                 .width(Fill)
                 .align_x(Center),
         );
 
-        container(content).center_x(200).into()
+        container(content).into()
     }
 }
 
@@ -106,11 +131,7 @@ pub fn listen() -> impl Stream<Item = WindowMessage> {
     std::thread::spawn(move || {
         let mut listener = hyprland::event_listener::EventListener::new();
 
-        listener.add_sub_map_changed_handler(move |data| {
-            println!("Sending {data:#?}");
-
-            tx.send(data.to_string()).unwrap()
-        });
+        listener.add_sub_map_changed_handler(move |data| tx.send(data.to_string()).unwrap());
 
         listener.start_listener()
     });
@@ -119,7 +140,6 @@ pub fn listen() -> impl Stream<Item = WindowMessage> {
         loop {
             async_std::task::sleep(std::time::Duration::from_millis(100)).await;
             let foo = rx.recv().unwrap();
-            eprintln!("{foo:#?}");
             match foo.is_empty() {
                 true => output.send(WindowMessage::WindowClose).await,
                 false => output.send(WindowMessage::WindowOpened(foo)).await,
