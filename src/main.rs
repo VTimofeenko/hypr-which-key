@@ -1,67 +1,109 @@
 #![allow(warnings)]
-use hyprland::async_closure;
-use iced::futures;
-use iced::stream;
-use iced::widget::{self, button, center, column, row, scrollable, text, text_input};
-use iced::{color, Center, Element, Fill, Subscription, Task};
-
-//use futures::channel::mpsc;
 use futures::sink::SinkExt;
 use futures::stream::{Stream, StreamExt};
+use iced::futures;
+use iced::stream;
+use iced::widget::{
+    button, center, column, container, horizontal_space, scrollable, text, text_input,
+};
+use iced::window;
+use iced::{Center, Element, Fill, Subscription, Task, Theme, Vector};
 
-pub fn main() -> iced::Result {
-    iced::application("HyprWhichKey - Iced", HyprWhichKey::update, HyprWhichKey::view)
-        .theme(|_| iced::Theme::Dark)
-        .subscription(HyprWhichKey::subscription)
-        .run()
+use std::collections::BTreeMap;
+
+fn main() -> iced::Result {
+    iced::daemon("Example", Example::update, Example::view)
+        .subscription(Example::subscription)
+        .theme(Example::theme)
+        .run_with(Example::new)
 }
 
-#[derive(Default)]
-struct HyprWhichKey {
+#[derive(Debug)]
+struct Example {
+    windowId: Option<window::Id>,
+    window: Option<Window>,
+}
+
+#[derive(Debug)]
+struct Window {
     submap: String,
-    should_show: bool,
 }
 
 #[derive(Debug, Clone)]
-enum Message {
-    EnterSubmap(String),
-    ExitSubmap,
+enum WindowMessage {
+    WindowOpened(String),
+    WindowClose,
 }
 
-impl HyprWhichKey {
-    fn new() -> Self {
-        Self {
-            submap: "".to_string(),
-            should_show: false,
+impl Example {
+    fn new() -> (Self, Task<WindowMessage>) {
+        (
+            Self {
+                windowId: None,
+                window: None,
+            },
+            Task::none(),
+        )
+    }
+
+    fn update(&mut self, message: WindowMessage) -> Task<WindowMessage> {
+        match message {
+            WindowMessage::WindowOpened(submap) => {
+                println!("Creating window with {submap:#?}");
+                let window = Window::new(submap);
+
+                let (id, open) = window::open(window::Settings::default());
+                self.windowId = Some(id);
+                self.window = Some(window);
+
+                open.discard()
+            }
+            WindowMessage::WindowClose => {
+                if let (Some(id), Some(window)) = (self.windowId, &self.window) {
+                    window::close(id)
+                } else {
+                    Task::none()
+                }
+            }
         }
     }
 
-    fn update(&mut self, message: Message) {
-        eprintln!("Got update: {:?}", message);
-        match message {
-            Message::EnterSubmap(submap) => {
-                self.should_show = true;
-                self.submap = submap;
-            }
-            Message::ExitSubmap => self.should_show = false,
-        };
+    fn view(&self, window_id: window::Id) -> Element<WindowMessage> {
+        println!("Daemon view {self:#?}");
+        let window = &self.window;
+        window.as_ref().unwrap().view(self.windowId.unwrap()).into()
     }
 
-    fn subscription(&self) -> Subscription<Message> {
+    fn theme(&self, window: window::Id) -> Theme {
+        Theme::Dark
+    }
+
+    fn subscription(&self) -> Subscription<WindowMessage> {
         Subscription::run(listen)
-    }
-
-    fn view(&self) -> Element<Message> {
-        println!("View");
-        column![text(self.submap.clone()), text("BEPIS")].into()
     }
 }
 
-pub fn listen() -> impl Stream<Item = Message> {
+impl Window {
+    fn new(submap: String) -> Self {
+        Self { submap }
+    }
+
+    fn view(&self, id: window::Id) -> Element<WindowMessage> {
+        let content = scrollable(
+            column![text(self.submap.clone())]
+                .spacing(50)
+                .width(Fill)
+                .align_x(Center),
+        );
+
+        container(content).center_x(200).into()
+    }
+}
+
+pub fn listen() -> impl Stream<Item = WindowMessage> {
     let (tx, rx) = std::sync::mpsc::channel();
 
     std::thread::spawn(move || {
-        // Here be the event listener that connects to hyprland socket and sends the submap data
         let mut listener = hyprland::event_listener::EventListener::new();
 
         listener.add_sub_map_changed_handler(move |data| {
@@ -75,12 +117,12 @@ pub fn listen() -> impl Stream<Item = Message> {
 
     stream::channel(100, move |mut output| async move {
         loop {
-            async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+            async_std::task::sleep(std::time::Duration::from_millis(100)).await;
             let foo = rx.recv().unwrap();
             eprintln!("{foo:#?}");
             match foo.is_empty() {
-                true => output.send(Message::ExitSubmap).await,
-                false => output.send(Message::EnterSubmap(foo)).await,
+                true => output.send(WindowMessage::WindowClose).await,
+                false => output.send(WindowMessage::WindowOpened(foo)).await,
             };
         }
     })
